@@ -21,9 +21,16 @@
         <div class="product-info">
           <div class="product-title">
             <h2>{{ productName }}</h2>
-            <span class="product-count">数量: 1</span>
+            <span class="product-count">数量: {{ quantity }}</span>
           </div>
-          <div class="product-price">价格: ¥5699</div>
+          <div class = "product-back">
+              <div class="product-price">价格: ¥5699</div>
+          </div>
+          <div class="quantity-control">
+            <button @click="decreaseQuantity">-</button>
+            <span>{{ quantity }}</span>
+            <button @click="increaseQuantity">+</button>
+          </div>
           <el-button type="primary" class="buy-button" @click="addToCart">立即购买</el-button>
         </div>
       </div>
@@ -53,7 +60,8 @@ export default {
         logo,
       ],
       currentIndex: 0,
-      isZoomed: false
+      isZoomed: false,
+      quantity: 1 // 添加购买数量的初始值
     }
   },
   methods: {
@@ -64,8 +72,18 @@ export default {
     toggleImageZoom() {
       this.isZoomed = !this.isZoomed;
     },
+    increaseQuantity() {
+      if (this.quantity < 10) { // 限制最大购买数量为10
+        this.quantity++;
+      }
+    },
+    decreaseQuantity() {
+      if (this.quantity > 1) {
+        this.quantity--;
+      }
+    },
     addToCart() {
-      alert('商品已添加到购物车');
+      alert(`商品已添加到购物车，数量：${this.quantity}`);
     }
   }
 }
@@ -151,9 +169,40 @@ export default {
 
 .product-price {
   display: flex;
+  font-weight: bold;
   font-size: 20px;
   color: #333;
   margin-bottom: 10px; /* 减少上下间距 */
+}
+
+.product-back{
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 4px;
+  width: 70%;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  border: 2px solid #888; /* 添加黑边 */
+  box-shadow: 0 0 8px #d6d5d5;
+  padding: 5px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.quantity-control button {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.quantity-control span {
+  margin: 0 10px;
+  font-size: 20px;
 }
 
 .buy-button {
