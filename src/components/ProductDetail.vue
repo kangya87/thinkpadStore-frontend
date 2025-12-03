@@ -42,9 +42,11 @@
 </template>
 
 <script>
+import { inject } from 'vue'
 import AppHeader from './AppHeader.vue'
 import logo from '@/assets/logo.png'
 import logo1 from '@/assets/ouc.png'
+import { cartService } from '@/services/api'
 
 export default {
   name: 'ProductDetail',
@@ -62,6 +64,15 @@ export default {
       currentIndex: 0,
       isZoomed: false,
       quantity: 1 // 添加购买数量的初始值
+    }
+  },
+  setup() {
+    const showCartSidebar = inject('showCartSidebar', () => {})
+    const cartState = inject('cartState', { items: [] })
+
+    return {
+      showCartSidebar,
+      cartState
     }
   },
   methods: {
@@ -82,8 +93,39 @@ export default {
         this.quantity--;
       }
     },
-    addToCart() {
-      alert(`商品已添加到购物车，数量：${this.quantity}`);
+    async addToCart() {
+      try {
+        const productData = {
+          id: this.$route.params.id || 1, // 从路由参数获取商品ID
+          name: this.productName,
+          price: 5699,
+          image: this.productImages[0],
+          quantity: this.quantity
+        }
+
+        // 添加到购物车
+        await cartService.create({
+          product_id: productData.id,
+          product_name: productData.name,
+          price: productData.price,
+          quantity: productData.quantity,
+          image: productData.image
+        })
+
+        // 更新全局购物车状态
+        this.cartState.items.push(productData)
+
+        // 显示购物车
+        this.showCartSidebar()
+
+        // 重置数量
+        this.quantity = 1
+
+        alert(`商品已添加到购物车，数量：${productData.quantity}`)
+      } catch (error) {
+        console.error('添加到购物车失败:', error)
+        alert('添加到购物车失败，请重试')
+      }
     }
   }
 }

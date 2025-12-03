@@ -3,7 +3,7 @@
     <router-view/>
 
     <!-- 全局购物车侧边栏 -->
-    <Cart
+    <ShoppingCart
       v-if="cartState.isVisible"
       :is-sidebar="true"
       @close="closeCartSidebar"
@@ -20,12 +20,12 @@
 
 <script>
 import { provide, reactive } from 'vue'
-import Cart from './components/Cart.vue'
+import ShoppingCart from './components/ShoppingCart.vue'
 
 export default {
   name: 'App',
   components: {
-    Cart
+    ShoppingCart
   },
   setup() {
     // 购物车状态管理
