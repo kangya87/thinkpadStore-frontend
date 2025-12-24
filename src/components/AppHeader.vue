@@ -7,21 +7,26 @@
 
     <div class="header-actions">
       <!-- 用户认证状态 -->
-      <div v-if="authState.isAuthenticated" class="user-section">
-        <div class="user-avatar-dropdown" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
-          <div class="user-avatar">
-            <img src="@/assets/logo.png" alt="用户头像" />
-          </div>
-          <div v-if="showUserMenu" class="user-dropdown-menu">
-            <div class="dropdown-item" @click="handleLogout">
-              退出登录
-            </div>
-          </div>
+      
+      <!-- 未登录 -->
+      <template v-if="!isLogin">
+        <div class="ShoppingCart" @click="goRegister">
+          <span>注册</span>
         </div>
-      </div>
-      <div v-else class="login-section">
-        <button class="login-btn" @click="goToLogin">登录</button>
-      </div>
+        <div class="ShoppingCart" @click="goToLogin">
+          <span>登录</span>
+        </div>
+      </template>
+
+      <!-- 已登录 -->
+      <template v-else>
+        <div class="ShoppingCart user">
+          <span>你好，{{ username }}</span>
+        </div>
+        <div class="ShoppingCart logout" @click="logout">
+          <span>退出</span>
+        </div>
+      </template>
 
       <!-- 购物车 -->
       <div class="ShoppingCart" @click="showCartSidebar">
@@ -45,45 +50,69 @@ export default {
   setup() {
     const router = useRouter()
 
-    // 注入购物车状态和方法
+    // ===== 登录状态 =====
+    const isLogin = ref(false)
+    const username = ref('')
+
+    // 从 localStorage 初始化
+    const userInfo = localStorage.getItem('user_info')
+    if (userInfo) {
+      const user = JSON.parse(userInfo)
+      isLogin.value = true
+      username.value = user.username || ''
+    }
+
+    // ===== 注入购物车 =====
     const cartState = inject('cartState', { items: [] })
     const showCartSidebar = inject('showCartSidebar', () => {})
-    const authState = inject('authState', { isAuthenticated: false })
-    const logout = inject('logout', () => {})
 
-    // 用户菜单显示状态
-    const showUserMenu = ref(false)
-
-    // 计算购物车商品数量
+    // 购物车数量
     const cartItemCount = computed(() => {
       return cartState.items ? cartState.items.length : 0
     })
 
-    // 跳转到登录页面
+    // ===== 路由跳转 =====
     const goToLogin = () => {
       router.push('/login')
     }
 
-    // 处理登出
-    const handleLogout = () => {
-      if (confirm('确定要退出登录吗？')) {
-        logout()
-        alert('已退出登录')
-        router.push('/')
-      }
+    const goRegister = () => {
+      router.push('/register')
+    }
+
+    const goHome = () => {
+      router.push('/')
+    }
+
+    // ===== 退出登录 =====
+    const logout = () => {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user_info')
+
+      isLogin.value = false
+      username.value = ''
+
+      router.push('/')
     }
 
     return {
+      // 状态
+      isLogin,
+      username,
       cartItemCount,
-      authState,
-      showCartSidebar,
-      showUserMenu,
+
+      // 方法
       goToLogin,
-      handleLogout
+      goRegister,
+      goHome,
+      logout,
+      showCartSidebar
     }
   }
 }
 </script>
+
 
 <style scoped>
 .TitleBackground {

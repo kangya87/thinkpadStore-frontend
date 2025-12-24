@@ -1,288 +1,168 @@
 <template>
   <div class="login-page">
-    <header>
-      <AppHeader/>
+    <header class="header">
+      <img src="/lenovo-logo.png" class="logo" />
     </header>
-    <main class="login-content">
-      <div class="login-container">
-        <div class="login-form">
-          <h2>用户登录</h2>
 
-          <!-- 错误提示 -->
-          <div v-if="error" class="error-message">
-            {{ error }}
-          </div>
+    <div class="content">
+      <div class="left-banner"></div>
 
-          <form @submit.prevent="handleLogin">
-            <div class="form-group">
-              <label for="username">用户名</label>
-              <input
-                type="text"
-                id="username"
-                v-model="loginForm.username"
-                required
-                placeholder="请输入用户名"
-                autocomplete="username"
-              />
-            </div>
+      <div class="login-card">
+        <h2>登录联想账号</h2>
 
-            <div class="form-group">
-              <label for="password">密码</label>
-              <input
-                type="password"
-                id="password"
-                v-model="loginForm.password"
-                required
-                placeholder="请输入密码"
-                autocomplete="current-password"
-              />
-            </div>
+        <input
+          v-model="form.username"
+          type="text"
+          placeholder="请输入用户名"
+        />
 
-            <button type="submit" class="login-btn" :disabled="loading">
-              {{ loading ? '登录中...' : '登录' }}
-            </button>
-          </form>
+        <input
+          v-model="form.password"
+          type="password"
+          placeholder="请输入密码"
+        />
 
-          <div class="login-footer">
-            <p>还没有账号？<a href="#" @click="showRegister">立即注册</a></p>
-            <p><a href="#" @click="goHome">返回首页</a></p>
-          </div>
-        </div>
+        <button @click="handleLogin">登录</button>
+
+        <p class="register-link">
+          还没有账号？
+          <span @click="$router.push('/register')">立即注册</span>
+        </p>
       </div>
-    </main>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import AppHeader from './AppHeader.vue'
-import { authService } from '@/services/api'
+import { userService } from '@/services/api'
 
 export default {
-  name: 'LoginPage',
-  components: {
-    AppHeader
-  },
-  setup() {
-    const router = useRouter()
-
-    // 响应式数据
-    const loading = ref(false)
-    const error = ref('')
-    const loginForm = ref({
-      username: '',
-      password: ''
-    })
-
-    // 检查是否已经登录
-    const checkLoginStatus = () => {
-      const token = localStorage.getItem('auth_token')
-      if (token) {
-        // 已登录，跳转到首页
-        router.push('/')
-      }
-    }
-
-    // 处理登录
-    const handleLogin = async () => {
-      try {
-        loading.value = true
-        error.value = ''
-
-        const response = await authService.login(loginForm.value)
-
-        // 保存token
-        if (response.access && response.refresh) {
-          localStorage.setItem('auth_token', response.access)
-          localStorage.setItem('refresh_token', response.refresh)
-
-          // 登录成功，跳转到首页
-          router.push('/')
-
-          // 可以显示成功消息
-          alert('登录成功！')
-        } else {
-          error.value = '登录响应格式异常，请重试'
-        }
-
-      } catch (err) {
-        console.error('登录失败:', err)
-
-        // 根据错误类型显示不同的错误信息
-        if (err.response?.status === 401) {
-          error.value = '用户名或密码错误'
-        } else if (err.response?.status === 400) {
-          error.value = '输入信息有误，请检查后重试'
-        } else if (err.code === 'NETWORK_ERROR') {
-          error.value = '网络连接异常，请检查网络后重试'
-        } else {
-          error.value = '登录失败，请稍后重试'
-        }
-      } finally {
-        loading.value = false
-      }
-    }
-
-    // 显示注册页面（预留功能）
-    const showRegister = () => {
-      alert('注册功能暂未开放，请联系管理员创建账号')
-    }
-
-    // 返回首页
-    const goHome = () => {
-      router.push('/')
-    }
-
-    // 组件挂载时检查登录状态
-    onMounted(() => {
-      checkLoginStatus()
-    })
-
+  name: 'LoginUser',
+  data() {
     return {
-      loading,
-      error,
-      loginForm,
-      handleLogin,
-      showRegister,
-      goHome
+      form: {
+        username: '',
+        password: ''
+      }
     }
+  },
+  methods: {
+    async handleLogin() {
+      if (!this.form.username || !this.form.password) {
+        alert('用户名和密码不能为空')
+        return
+      }
+      try {
+        const res = await userService.login({
+          username: this.form.username,
+          password: this.form.password
+        })
+
+        // 🔴 核心校验
+        if (!res.access) {
+          throw new Error('登录成功但未返回 access token')
+        }
+
+        // ✅ 正确保存 token
+        localStorage.setItem('auth_token', res.access)
+        localStorage.setItem('refresh_token', res.refresh)
+        
+        localStorage.setItem(
+          'user_info',
+          JSON.stringify({ username: this.form.username })
+        )
+
+        alert('登录成功')
+        this.$router.push('/')
+        //window.location.reload()
+      } catch (err) {
+        console.error(err)
+        alert('登录失败，请检查用户名或密码')
+      }
+}
+
   }
 }
 </script>
 
 <style scoped>
 .login-page {
-  padding-top: 60px; /* 抵消固定头部 */
   min-height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(to right, #d9f2ea, #58b49d);
 }
 
-.login-content {
+.header {
+  padding: 20px 40px;
+}
+
+.logo {
+  height: 32px;
+}
+
+.content {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 60px);
-  padding: 20px;
+  height: calc(100vh - 80px);
 }
 
-.login-container {
-  width: 100%;
-  max-width: 400px;
+.left-banner {
+  flex: 1;
+  background: url('~@/assets/register-bg.png') no-repeat center center;
+  background-size: cover;
 }
 
-.login-form {
+.login-card {
+  width: 420px;
   background: #fff;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 40px 30px;
+  margin: auto 80px auto auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-.login-form h2 {
-  text-align: center;
+.login-card h2 {
   margin-bottom: 30px;
-  color: #333;
   font-size: 24px;
+  font-weight: bold;
 }
 
-.error-message {
-  background-color: #fee;
-  color: #c33;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
-}
-
-.form-group input {
+.login-card input {
   width: 100%;
-  padding: 12px;
+  height: 44px;
+  margin-bottom: 20px;
+  padding: 0 12px;
+  border-radius: 6px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-  transition: border-color 0.3s;
-  box-sizing: border-box;
+  font-size: 14px;
 }
 
-.form-group input:focus {
+.login-card input:focus {
   outline: none;
-  border-color: #409EFF;
+  border-color: #e2231a;
 }
 
-.login-btn {
+button {
   width: 100%;
-  background-color: #409EFF;
+  height: 44px;
+  background: #e2231a;
   color: #fff;
   border: none;
-  padding: 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.3s;
-  margin-top: 10px;
 }
 
-.login-btn:hover {
-  background-color: #66b1ff;
+button:hover {
+  background: #c91e17;
 }
 
-.login-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.login-footer {
-  text-align: center;
+.register-link {
   margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-}
-
-.login-footer p {
-  margin: 10px 0;
-  color: #666;
+  text-align: center;
   font-size: 14px;
 }
 
-.login-footer a {
-  color: #409EFF;
-  text-decoration: none;
+.register-link span {
+  color: #e2231a;
   cursor: pointer;
-}
-
-.login-footer a:hover {
-  text-decoration: underline;
-}
-
-/* 响应式设计 */
-@media (max-width: 480px) {
-  .login-content {
-    padding: 10px;
-  }
-
-  .login-form {
-    padding: 20px;
-  }
-
-  .login-form h2 {
-    font-size: 20px;
-  }
-
-  .form-group input {
-    padding: 10px;
-    font-size: 14px;
-  }
 }
 </style>
