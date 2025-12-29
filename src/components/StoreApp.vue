@@ -70,6 +70,7 @@
                 @error="(e) => e.target.src = defaultImage"
               />
               <div class="caption">{{ product.name }}</div>
+              <div class="desc">{{ product.desc }}</div>
               <div class="price" v-if="product.price">¥{{ formatPrice(product.price) }}</div>
             </div>
           </router-link>
@@ -165,7 +166,6 @@ export default {
       products.value = type === "all" ? [...allProducts.value] : allProducts.value.filter(p => p.category === type);
     };
 
-    // 数据请求【已删除所有模拟数据】
     const fetchProducts = async () => {
       loading.value = true;
       error.value = null;
@@ -305,9 +305,9 @@ export default {
 .arrow-right { transform: rotate(-45deg); }
 
 .category-nav {
-  width: 90%;
+  width: 100%;
   margin: 0 auto;
-  padding: 20px 0;
+  padding: 30px 0;
   border-bottom: 1px solid #eee;
 }
 .category-tabs {
@@ -359,39 +359,46 @@ export default {
 .card-inner {
   width: 100%;
   height: 100%;
-  background: #fafafa;
+  background: #fff;
   border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); 
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .card-inner:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 .card-inner img {
-  width: 100%;
-  height: calc(100% - 70px);
-  object-fit: cover;
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
   display: block;
+  margin: 20px 0 10px;
 }
 .caption {
-  padding:12px;
-  text-align:center;
-  font-size:16px;
-  font-weight:500;
-  background:#fff;
-  flex:1;
+  padding: 0 12px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+.desc {
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
 }
 .price {
-  padding:0 12px 12px;
-  text-align:center;
-  font-size:18px;
-  font-weight:bold;
-  color:#f56c6c;
-  background:#fff;
+  padding: 10px 12px 20px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #c81f1f;
 }
 
 .pagination {
