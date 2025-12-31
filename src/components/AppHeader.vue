@@ -1,7 +1,7 @@
 <template>
   <div class="TitleBackground">
-    <div class="Logo">
-      <img alt="Lenovo Logo" src="@/assets/logo.png" />
+    <div class="Logo" @click="goHome">
+      <img alt="Lenovo Logo" src="@/assets/Lenovo.png" />
       <span class="logo-text">联想商店</span>
     </div>
 
@@ -136,9 +136,9 @@ export default {
 }
 
 .Logo img {
-  max-width: 100px;
+  max-width: 200px;
   height: auto;
-  margin-right: 10px;
+  margin-right: 20px;
 }
 
 .logo-text {
