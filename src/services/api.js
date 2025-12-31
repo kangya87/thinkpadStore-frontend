@@ -37,6 +37,11 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // 某些接口允许匿名/不需要强制登录（如 AI 导购），避免 401 时被全局拦截跳转
+    if (originalRequest?._skipAuthRedirect) {
+      return Promise.reject(error)
+    }
+
     // 白名单页面，不跳登录
     if (whiteList.includes(currentPath)) {
       return Promise.reject(error)
@@ -86,6 +91,27 @@ export const productService = {
   }
 }
 
+export const cartService = {
+  getAll() {
+    return apiClient.get('/cart/')
+  },
+  create(data) {
+    return apiClient.post('/cart/', data)
+  },
+  getById(id) {
+    return apiClient.get(`/cart/${id}/`)
+  },
+  update(id, data) {
+    return apiClient.put(`/cart/${id}/`, data)
+  },
+  partialUpdate(id, data) {
+    return apiClient.patch(`/cart/${id}/`, data)
+  },
+  delete(id) {
+    return apiClient.delete(`/cart/${id}/`)
+  }
+}
+
 export const userService = {
   register(data) {
     return apiClient.post('/user/', {
@@ -99,6 +125,12 @@ export const userService = {
       username: data.username,
       password: data.password
     })
+  }
+}
+
+export const assistantService = {
+  chat(payload) {
+    return apiClient.post('/assistant/chat/', payload, { _skipAuthRedirect: true })
   }
 }
 

@@ -315,3 +315,120 @@ export default {
     /* 组件的css样式 */
 </style>
 ```
+
+---
+
+# 新增功能实现思路：AI 导购浮窗（assistant/chat）
+
+目标：基于后端新增接口 `POST /assistant/chat/`，在前端实现一个“可随时呼出/收起”的 AI 导购浮窗，用于自然语言提问并展示推荐商品；点击推荐商品可跳转到商品详情页。
+
+## 1. 需求拆解（最小可用）
+- 浮窗入口：页面右下角固定一个按钮（如“AI 导购”）。
+- 浮窗形态：点击按钮打开一个悬浮面板（不跳页），可关闭/最小化。
+- 对话能力：输入问题 → 调用接口 → 展示 `answer` 文本 + `recommendations` 列表。
+- 多轮对话：将最近若干条对话作为 `history` 传给接口（接口要求最多 6 条）。
+- 过滤参数：可选输入 `budget_min` / `budget_max`，以及 `limit`（默认 8）。
+- 推荐商品交互：
+  - 展示名称、型号、价格、库存、亮点/取舍、推荐理由。
+  - 点击推荐项：`router.push('/product/:id')`（或项目当前详情路由）。
+
+## 2. UI/组件设计（建议组件，不立即实现）
+放在 `src/components/` 下：
+- `AssistantWidget.vue`（核心浮窗组件）
+  - 负责：按钮 + 面板容器、开关状态、消息列表、输入框、加载/错误态。
+  - 对外：无需 props（或仅一个 `defaultOpen`），在 `App.vue` 全局挂载一次。
+- （可选）`AssistantMessageList.vue` / `RecommendationList.vue`
+  - 若主组件过大再拆分；MVP 可以先全部写在一个组件里。
+
+样式原则：
+- 使用现有项目 CSS 写法（当前项目未看到 Tailwind/设计系统约束时，保持风格一致即可）。
+- 固定定位：`position: fixed; right: 24px; bottom: 24px;`（可根据现有样式调整）。
+
+## 3. 路由与挂载位置
+两种方案，优先“全局浮窗”（更符合“随时呼出”）：
+1) 全局浮窗（推荐）
+   - 在 `App.vue` 根组件中引入并渲染 `<AssistantWidget />`，确保所有页面都可用。
+2) 独立页面 + 浮窗入口
+   - 新增一个路由 `/assistant`（页面里也渲染浮窗内容）；
+   - 但用户要求“浮窗页面”，更像方案 1。
+
+## 4. 接口对接与数据结构
+接口：`POST /assistant/chat/`（匿名可调用，无需登录）。
+
+请求体（按接口文档）：
+```json
+{
+  "message": "string",
+  "budget_min": "string | null",
+  "budget_max": "string | null",
+  "limit": 8,
+  "history": [
+    {"role": "user", "content": "..."},
+    {"role": "assistant", "content": "..."}
+  ]
+}
+```
+
+响应体：
+```json
+{
+  "answer": "...",
+  "recommendations": [
+    {
+      "product_id": 1,
+      "name": "...",
+      "model": "...",
+      "price": "...",
+      "stock": 5,
+      "highlights": ["..."],
+      "tradeoffs": ["..."],
+      "why_fit": "..."
+    }
+  ],
+  "used_filters": {"budget_min": null, "budget_max": "6000.00", "limit": 8}
+}
+```
+
+前端状态建议：
+- `isOpen`: 是否展开
+- `inputText`: 当前输入
+- `budgetMin/budgetMax/limit`: 可选过滤
+- `messages`: 用于渲染对话气泡（本地维护）
+  - 结构示例：`{ role: 'user'|'assistant', content: string, ts: number, recommendations?: Recommendation[] }`
+- `isLoading`: 请求中
+- `error`: 错误信息（如 400/429/网络错误）
+
+history 组装策略：
+- 每次发送请求时，从 `messages` 中筛选最近的 user/assistant 文本消息，截断到 6 条；
+- 注意：后端的 `recommendations` 是结构化字段，不一定要放进 history（避免冗长）；
+  - history 里建议仅放自然语言 `content`（用户问题 + assistant answer）。
+
+## 5. services/api.js 的改造点（仅方案）
+当前项目已有 `src/services/api.js`：
+- 增加一个方法：`assistantChat(payload)`，内部 `axios.post('/assistant/chat/', payload)`。
+- baseURL：沿用现有配置（接口文档服务地址 `http://ouc.it.srv.thinkpadstore.lighilit.top/`）。
+- 认证：该接口标注匿名可调用；因此不要强制附带登录 token。
+  - 如果项目已有 axios 拦截器统一加 Authorization，需要确保该接口不会因为缺 token 而失败（按后端描述应允许匿名）。
+
+## 6. 交互细节（用户体验与边界）
+- 发送：点击发送按钮或 Enter 发送（Shift+Enter 换行可选，MVP 可不做）。
+- 加载态：发送后禁用输入/按钮，显示“AI 思考中…”占位。
+- 错误态：
+  - 429：提示“请求过于频繁，请稍后再试”。
+  - 400：提示“参数错误/服务暂不可用”（可展示后端返回 detail）。
+  - 网络错误：提示“网络异常”。
+- 自动滚动：新消息追加后滚动到底部。
+
+## 7. 与商品/购物车页面的联动
+- 推荐列表点击跳转商品详情：
+  - 若已有 `ProductDetail.vue` 路由：`/product/:id` 或其他规则，以现有 `src/router/index.js` 为准。
+- （可选后续）在推荐条目上提供“加入购物车”按钮：
+  - 需要调用 cart 接口并处理登录/匿名策略；本次先不做（避免扩大范围）。
+
+## 8. 开发顺序（实施步骤）
+1) 确认现有 axios/baseURL 与路由结构（查看 `src/services/api.js`、`src/router/index.js`）。
+2) 在 `src/services/api.js` 新增 `assistantChat` 方法并联调最小请求体。
+3) 新增 `AssistantWidget.vue`：先完成静态 UI + 开关逻辑。
+4) 接入请求：输入 → 调用 → 渲染 answer + recommendations。
+5) 增加 history 截断与 429/400 错误处理。
+6) 在 `App.vue` 挂载组件，并手动验证在商品列表/详情/购物车页都可呼出。

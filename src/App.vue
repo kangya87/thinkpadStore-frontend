@@ -2,6 +2,9 @@
   <div id="app">
     <router-view/>
 
+    <!-- 全局 AI 导购浮窗 -->
+    <AssistantWidget />
+
     <!-- 全局购物车侧边栏 -->
     <ShoppingCart
       v-if="cartState.isVisible"
@@ -21,11 +24,13 @@
 <script>
 import { provide, reactive, onMounted } from 'vue'
 import ShoppingCart from './components/ShoppingCart.vue'
+import AssistantWidget from './components/AssistantWidget.vue'
 
 export default {
   name: 'App',
   components: {
-    ShoppingCart
+    ShoppingCart,
+    AssistantWidget
   },
   setup() {
     // 购物车状态管理
